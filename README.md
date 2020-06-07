@@ -18,4 +18,4 @@ gradient(randn(2), randn(2)) do X,Y
 end
 ```
 
-Now load this package and run that again.
+You will get an error. Now load this package and run that again.
