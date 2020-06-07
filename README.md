@@ -4,7 +4,7 @@ Defines [Zygote](https://github.com/FluxML/Zygote.jl) adjoint rules for [StructA
 
 ## Usage
 
-Simply `import ZygoteStructArrays` into your code and the adjoint rules will just work.
+Install with `] add ZygoteStructArrays`. Then Simply `import ZygoteStructArrays` into your code and the adjoint rules will just work.
 
 ## Examples
 
