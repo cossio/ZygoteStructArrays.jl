@@ -1,7 +1,7 @@
 module ZygoteStructArrays
 
-using Zygote, StructArrays
-using Zygote: @adjoint, literal_getproperty
+using Zygote, StructArrays, LinearAlgebra
+using Zygote: @adjoint, Numeric, literal_getproperty, accum
 
 include("adjoints.jl")
 
