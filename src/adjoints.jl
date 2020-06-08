@@ -1,21 +1,26 @@
-@adjoint function (::Type{T})(t::Tuple) where {T<:StructArray}
-    result = T(t)
+@adjoint function (::Type{SA})(t::Tuple) where {SA<:StructArray}
+    sa = SA(t)
     back(Δ::NamedTuple) = (values(Δ),)
     function back(Δ::AbstractArray{<:NamedTuple})
-        nt = (; (p => [getproperty(dx, p) for dx in Δ] for p in propertynames(result))...)
+        nt = (; (p => [getproperty(dx, p) for dx in Δ] for p in propertynames(sa))...)
         return back(nt)
     end
-    return result, back
+    return sa, back
 end
 
-@adjoint function (::Type{T})(t::NamedTuple) where {T<:StructArray}
-    result = T(t)
-    back(Δ::NamedTuple) = (NamedTuple{propertynames(result)}(Δ),)
+@adjoint function (::Type{SA})(t::NamedTuple) where {SA<:StructArray}
+    sa = SA(t)
+    back(Δ::NamedTuple) = (NamedTuple{propertynames(sa)}(Δ),)
     function back(Δ::AbstractArray{<:NamedTuple})
-        nt = (; (p => [dx[p] for dx in Δ] for p in propertynames(result))...)
-        return back(nt)
+        back((; (p => [dx[p] for dx in Δ] for p in propertynames(sa))...))
     end
-    return result, back
+    return sa, back
+end
+
+@adjoint function (::Type{SA})(a::AbstractArray{T}) where {T,SA<:StructArray}
+    sa = SA(a)
+    back(Δ::NamedTuple) = ([(; (p => Δ[p][i] for p in propertynames(Δ))...) for i in eachindex(a)],)
+    return sa, back
 end
 
 @adjoint function literal_getproperty(sa::StructArray, ::Val{key}) where {key}
@@ -28,30 +33,24 @@ end
     return result, back
 end
 
-@adjoint function (::Type{T})(t::Tuple) where {K,T<:NamedTuple{K}}
-    result = T(t)
-    back(Δ::NamedTuple) = (values(T(Δ)),)
-    return result, back
-end
-
-@adjoint Base.getindex(x::StructArray, i...) = x[i...], Δ -> ∇getindex(x, i, Δ)
-@adjoint Base.view(x::StructArray, i...) = view(x, i...), Δ -> ∇getindex(x, i, Δ)
-function ∇getindex(x::StructArray, i, Δ::NamedTuple)
-    dx = (; (k => ∇getindex(v, i, Δ[k]) for (k,v) in pairs(fieldarrays(x)))...)
+@adjoint Base.getindex(sa::StructArray, i...) = sa[i...], Δ -> ∇getindex(sa,i,Δ)
+@adjoint Base.view(sa::StructArray, i...) = view(sa, i...), Δ -> ∇getindex(sa,i,Δ)
+function ∇getindex(sa::StructArray, i, Δ::NamedTuple)
+    dsa = (; (k => ∇getindex(v,i,Δ[k]) for (k,v) in pairs(fieldarrays(sa)))...)
     di = map(_ -> nothing, i)
-    return (dx, map(_ -> nothing, i)...)
+    return (dsa, map(_ -> nothing, i)...)
 end
 # based on 
 # https://github.com/FluxML/Zygote.jl/blob/64c02dccc698292c548c334a15ce2100a11403e2/src/lib/array.jl#L41
-∇getindex(x::AbstractArray, i, Δ::Nothing) = nothing
-function ∇getindex(x::AbstractArray, i, Δ)
+∇getindex(a::AbstractArray, i, Δ::Nothing) = nothing
+function ∇getindex(a::AbstractArray, i, Δ)
     if i isa NTuple{<:Any, Integer}
-        dx = Zygote._zero(x, typeof(Δ))
-        dx[i...] = Δ
+        da = Zygote._zero(a, typeof(Δ))
+        da[i...] = Δ
     else
-        dx = Zygote._zero(x, eltype(Δ))
-        dxv = view(dx, i...)
-        dxv .= Zygote.accum.(dxv, Zygote._droplike(Δ, dxv))
+        da = Zygote._zero(a, eltype(Δ))
+        dav = view(da, i...)
+        dav .= Zygote.accum.(dav, Zygote._droplike(Δ, dav))
     end
-    return dx
+    return da
 end
