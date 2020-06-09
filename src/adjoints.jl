@@ -17,9 +17,22 @@ end
     return sa, back
 end
 
-@adjoint function (::Type{SA})(a::AbstractArray{T}) where {T,SA<:StructArray}
+@adjoint function (::Type{SA})(a::A) where {T,SA<:StructArray,A<:AbstractArray{T}}
     sa = SA(a)
-    back(Δ::NamedTuple) = ([(; (p => Δ[p][i] for p in propertynames(Δ))...) for i in eachindex(a)],)
+    function back(Δsa)
+        Δa = [(; (p => Δsa[p][i] for p in propertynames(Δsa))...) for i in eachindex(a)]
+        return (Δa,)
+    end
+    return sa, back
+end
+
+# Must special-case for Complex (#1)
+@adjoint function (::Type{SA})(a::A) where {T<:Complex,SA<:StructArray,A<:AbstractArray{T}}
+    sa = SA(a)
+    function back(Δsa) # dsa -> da
+        Δa = [Complex(Δsa.re[i], Δsa.im[i]) for i in eachindex(a)]
+        (Δa,)
+    end
     return sa, back
 end
 

@@ -54,6 +54,12 @@ end == ([1.0, 1.0], nothing)
     sum(S.x) + sum(S.y)
 end == ([1.0, 1.0], [1.0, 1.0])
 
+#1
+@test gradient(randn(2), randn(2)) do X, Y
+    S = StructArray(Complex.(X, Y))
+    sum(S.re) + sum(S.im)
+end == ([1.0, 1.0], [1.0, 1.0])
+
 # @test gradient(randn(2), randn(2)) do X, Y
 #     S = StructArray{Complex}((re = X, im = Y))
 #     sum(abs.(S))
