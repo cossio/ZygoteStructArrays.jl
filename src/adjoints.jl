@@ -11,8 +11,8 @@ end
 @adjoint function (::Type{SA})(t::NamedTuple) where {SA<:StructArray}
     sa = SA(t)
     back(Δ::NamedTuple) = (NamedTuple{propertynames(sa)}(Δ),)
-    function back(Δ::AbstractArray{<:NamedTuple})
-        back((; (p => [dx[p] for dx in Δ] for p in propertynames(sa))...))
+    function back(Δ::AbstractArray)
+        back((; (p => [getproperty(dx, p) for dx in Δ] for p in propertynames(sa))...))
     end
     return sa, back
 end

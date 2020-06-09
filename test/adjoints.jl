@@ -54,13 +54,20 @@ end == ([1.0, 1.0], nothing)
     sum(S.x) + sum(S.y)
 end == ([1.0, 1.0], [1.0, 1.0])
 
+@test gradient(randn(2), randn(2)) do X, Y
+    S = StructArray{Point}((x = X, y = Y))
+    fun(p::Point) = p.x + 2p.y
+    sum(fun.(S))
+end == ([1.0, 1.0], [2.0, 2.0])
+
 #1
 @test gradient(randn(2), randn(2)) do X, Y
     S = StructArray(Complex.(X, Y))
-    sum(S.re) + sum(S.im)
-end == ([1.0, 1.0], [1.0, 1.0])
+    sum(S.re) + 2sum(S.im)
+end == ([1.0, 1.0], [2.0, 2.0])
 
-# @test gradient(randn(2), randn(2)) do X, Y
-#     S = StructArray{Complex}((re = X, im = Y))
-#     sum(abs.(S))
-# end
+@test gradient(randn(2), randn(2)) do X, Y
+    S = StructArray{Complex}((re = X, im = Y))
+    fun(z::Complex) = real(z) + 2imag(z)
+    sum(fun.(S))
+end == ([1.0, 1.0], [2.0, 2.0])
