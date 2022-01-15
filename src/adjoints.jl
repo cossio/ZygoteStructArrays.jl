@@ -40,7 +40,7 @@ end
     key::Symbol
     result = getproperty(sa, key)
     function back(Δ::AbstractArray)
-        nt = (; (k => zero(v) for (k,v) in pairs(fieldarrays(sa)))...)
+        nt = (; (k => zero(v) for (k,v) in pairs(StructArrays.components(sa)))...)
         return (Base.setindex(nt, Δ, key), nothing)
     end
     return result, back
@@ -49,11 +49,11 @@ end
 @adjoint Base.getindex(sa::StructArray, i...) = sa[i...], Δ -> ∇getindex(sa,i,Δ)
 @adjoint Base.view(sa::StructArray, i...) = view(sa, i...), Δ -> ∇getindex(sa,i,Δ)
 function ∇getindex(sa::StructArray, i, Δ::NamedTuple)
-    dsa = (; (k => ∇getindex(v,i,Δ[k]) for (k,v) in pairs(fieldarrays(sa)))...)
+    dsa = (; (k => ∇getindex(v,i,Δ[k]) for (k,v) in pairs(StructArrays.components(sa)))...)
     di = map(_ -> nothing, i)
     return (dsa, map(_ -> nothing, i)...)
 end
-# based on 
+# based on
 # https://github.com/FluxML/Zygote.jl/blob/64c02dccc698292c548c334a15ce2100a11403e2/src/lib/array.jl#L41
 ∇getindex(a::AbstractArray, i, Δ::Nothing) = nothing
 function ∇getindex(a::AbstractArray, i, Δ)
