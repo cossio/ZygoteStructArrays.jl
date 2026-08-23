@@ -1,7 +1,8 @@
 @adjoint function (::Type{SA})(t::Tuple) where {SA<:StructArray}
     sa = SA(t)
     back(Δ::NamedTuple) = (values(Δ),)
-    function back(Δ::AbstractArray{<:NamedTuple})
+    # e.g. a natural tangent such as a StructArray or an array of structs
+    function back(Δ::AbstractArray)
         nt = (; (p => [getproperty(dx, p) for dx in Δ] for p in propertynames(sa))...)
         return back(nt)
     end
@@ -40,7 +41,7 @@ end
     key::Symbol
     result = getproperty(sa, key)
     function back(Δ::AbstractArray)
-        nt = (; (k => zero(v) for (k,v) in pairs(fieldarrays(sa)))...)
+        nt = (; (k => zero(v) for (k,v) in pairs(StructArrays.components(sa)))...)
         return (Base.setindex(nt, Δ, key), nothing)
     end
     return result, back
@@ -49,9 +50,15 @@ end
 @adjoint Base.getindex(sa::StructArray, i...) = sa[i...], Δ -> ∇getindex(sa,i,Δ)
 @adjoint Base.view(sa::StructArray, i...) = view(sa, i...), Δ -> ∇getindex(sa,i,Δ)
 function ∇getindex(sa::StructArray, i, Δ::NamedTuple)
-    dsa = (; (k => ∇getindex(v,i,Δ[k]) for (k,v) in pairs(fieldarrays(sa)))...)
+    dsa = (; (k => ∇getindex(v,i,Δ[k]) for (k,v) in pairs(StructArrays.components(sa)))...)
     di = map(_ -> nothing, i)
     return (dsa, map(_ -> nothing, i)...)
+end
+∇getindex(sa::StructArray, i, Δ::Nothing) = nothing
+# natural tangents (e.g. a Complex or struct cotangent for sa[i]) -> componentwise NamedTuple
+function ∇getindex(sa::StructArray, i, Δ)
+    nt = (; (p => getproperty(Δ, p) for p in propertynames(sa))...)
+    return ∇getindex(sa, i, nt)
 end
 # based on 
 # https://github.com/FluxML/Zygote.jl/blob/64c02dccc698292c548c334a15ce2100a11403e2/src/lib/array.jl#L41

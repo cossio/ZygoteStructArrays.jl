@@ -37,7 +37,7 @@ end == ([1.0, 1.0], [2.0, 2.0])
 @test gradient(randn(2), randn(2)) do X, Y
     S = StructArray{Complex}((re = X, im = Y))
     S[1].re
-end == ([1.0, 0.0], nothing)
+end == ([1.0, 0.0], [0.0, 0.0]) # Zygote ≥ 0.6 returns a natural zero cotangent instead of `nothing`
 
 @test gradient(randn(2), randn(2)) do X, Y
     S = StructArray{Complex}((re = X, im = Y))
@@ -47,7 +47,7 @@ end == ([1.0, 0.0], [1.0, 0.0])
 @test gradient(randn(2), randn(2)) do X, Y
     S = StructArray{Complex}((re = X, im = Y))
     S[1].re + S[2].re
-end == ([1.0, 1.0], nothing)
+end == ([1.0, 1.0], [0.0, 0.0]) # Zygote ≥ 0.6 returns a natural zero cotangent instead of `nothing`
 
 @test gradient(randn(2), randn(2)) do X, Y
     S = StructArray(Point.(X, Y))
